@@ -3,28 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.EventSystems;
+using UnityEngine.UIElements;
 
 [RequireComponent (typeof(Rigidbody2D))]
 [RequireComponent (typeof(BoxCollider2D))]
 public class lockToGround : MonoBehaviour
 {
     public TextMeshProUGUI infoText;
-    public float offset = 0;
+    public Vector2 basePosition;
+    public Vector2 offset = new Vector2(0,0);
+    private float velocityY = 0; //used only for falling
+    public float maxStepHeight = 0.2f;
     public float offsetGoal = 0;
     public float offsetLerpSpeed = 1f;
     public float lerpAcceleration = 1f;
     public float lerpIncrease = 1.25f;
-    public float baseY = 0;
-    public float leftY = 0;
-    public float midY = 0;
-    public float rightY = 0;
-    public float velocityY = 0;
-    public float distanceL = 0;
-    public float distanceM = 0;
-    public float distanceR = 0;
-    public string LTag = "none";
-    public string MTag = "none";
-    public string RTag = "none";
+    public rayCastInfo rc;
+    public float gravity = 1;
     public Rigidbody2D rb;
     public BoxCollider2D box;
     public RaycastHit2D leftHit;
@@ -34,6 +29,8 @@ public class lockToGround : MonoBehaviour
     public float rayCastStartY = 5000;
     public float rayCastLength = 15000;
     public float newY = 0;
+    public float speedModifier = 1;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -41,6 +38,10 @@ public class lockToGround : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         box = GetComponent<BoxCollider2D>();
         rb.gravityScale = 0f;
+        rc = new rayCastInfo();
+        initializeRCInfo();
+        basePosition = rb.position;
+        offset.y = basePosition.y;
     }
 
     // Update is called once per frame
@@ -52,31 +53,47 @@ public class lockToGround : MonoBehaviour
 
         //determine the players new YPos
         float snapPoint = getHighest() + (box.size.y / 2);
-        if(offset!=snapPoint)
+        if(offset.y != snapPoint)
         {
             offsetGoal = snapPoint;
         }
-        offset = Mathf.Lerp(offset,offsetGoal,Time.deltaTime * (offsetLerpSpeed * lerpAcceleration));
-        if(offsetGoal < offset && (offset - offsetGoal)<.1 ) //meaning the player is falling
+
+        //check direction here
+        if (offsetGoal > offset.y)
         {
-            lerpAcceleration *= lerpIncrease;
+            //check if the step is too steep
+            if (offsetGoal - offset.y > maxStepHeight)      //currently this is creating an issue where its almost always returning true
+            {
+                offsetGoal = offset.y;                      //or is this line the issue, I dont Fucking know
+            }
+            else
+            {
+                offset.y = offsetGoal;
+            }
         }
         else
         {
-            lerpAcceleration = 1;
-        }
-
-
+            if(offset.y - gravity > offsetGoal)
+            {
+                offset.y -= velocityY;
+                velocityY += gravity * Time.deltaTime;
+            }
+            else
+            {
+                //just set the offset to the final position
+                offset.y = offsetGoal;
+            }
+        }        
         //move the player to the new YPos (this will be edited to use Velocity
-        newY = baseY + offset;
+        newY = basePosition.y + offset.y;
     }
 
     void UpdateTextMesh()
     {       
         //update the info text so i can test everything
-        infoText.text = "Off: " + offset + " | Base: " + baseY + " (L: " + leftY + " | M: " + midY + " | R: " + rightY + ") V:  " + velocityY + " \n" +
-            "DL: " + distanceL + " | DM: " + distanceM + " | DR: " + distanceR + "\n" +
-            LTag + " | " + MTag + " | " + RTag + "";
+        infoText.text = "Off: " + offset.y + " | Base: " + basePosition.x + " , " + basePosition.y + " (L: " + rc.leftY + " | M: " + rc.midY + " | R: " + rc.rightY + ") V:  " + rc.velocityY + " \n" +
+            "DL: " + rc.distanceL + " | DM: " + rc.distanceM + " | DR: " + rc.distanceR + "\n" +
+            rc.LTag + " | " + rc.MTag + " | " + rc.RTag + "";
     }
 
     void doRaycasts()
@@ -92,60 +109,60 @@ public class lockToGround : MonoBehaviour
         //left
         if (leftHit)
         {
-            leftY = leftHit.point.y;
-            LTag = leftHit.transform.tag;
-            distanceL = baseY - leftY;
+            rc.leftY = leftHit.point.y;
+            rc.LTag = leftHit.transform.tag;
+            rc.distanceL = basePosition.y - rc.leftY;
         }
         else
         {
-            leftY = rb.position.y;
-            LTag = "none";
-            distanceL = 0;
+            rc.leftY = rb.position.y;
+            rc.LTag = "none";
+            rc.distanceL = 0;
         }
 
         //middle
         if (middleHit)
         {
-            midY = middleHit.point.y;
-            MTag = middleHit.transform.tag;
-            distanceM = baseY - midY;
+            rc.midY = middleHit.point.y;
+            rc.MTag = middleHit.transform.tag;
+            rc.distanceM = basePosition.y - rc.midY;
         }
         else
         {
-            midY = rb.position.y;
-            MTag = "none";
-            distanceM = 0;
+            rc.midY = rb.position.y;
+            rc.MTag = "none";
+            rc.distanceM = 0;
         }
 
         //right
         if (rightHit)
         {
-            rightY = rightHit.point.y;
-            RTag = rightHit.transform.tag;
-            distanceR = baseY - rightY;
+            rc.rightY = rightHit.point.y;
+            rc.RTag = rightHit.transform.tag;
+            rc.distanceR = basePosition.y - rc.rightY;
         }
         else
         {
-            rightY = rb.position.y;
-            RTag = "none";
-            distanceR = 0;
+            rc.rightY = rb.position.y;
+            rc.RTag = "none";
+            rc.distanceR = 0;
         }
     }
 
     float getHighest()
     {
         float highest = 0;
-        if(leftY > highest)
+        if(rc.leftY > highest)
         {
-            highest = leftY;
+            highest = rc.leftY;
         }
-        if(midY > highest)
+        if(rc.midY > highest)
         {
-            highest = midY;
+            highest = rc.midY;
         }
-        if(rightY > highest)
+        if(rc.rightY > highest)
         {
-            highest = rightY;
+            highest = rc.rightY;
         }
         return highest;
     }
@@ -162,7 +179,7 @@ public class lockToGround : MonoBehaviour
             if(leftHit)
             {
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(origin - new Vector2(box.size.x / 2, 0), new Vector3(origin.x - box.size.x / 2, leftY, 0));
+                Gizmos.DrawLine(origin - new Vector2(box.size.x / 2, 0), new Vector3(origin.x - box.size.x / 2, rc.leftY, 0));
             }
             else
             {
@@ -174,7 +191,7 @@ public class lockToGround : MonoBehaviour
             if (middleHit)
             {
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(origin , new Vector3(origin.x, midY, 0));
+                Gizmos.DrawLine(origin , new Vector3(origin.x, rc.midY, 0));
             }
             else
             {
@@ -186,7 +203,7 @@ public class lockToGround : MonoBehaviour
             if (rightHit)
             {
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(origin + new Vector2(box.size.x / 2, 0), new Vector3(origin.x + box.size.x / 2, rightY, 0));
+                Gizmos.DrawLine(origin + new Vector2(box.size.x / 2, 0), new Vector3(origin.x + box.size.x / 2, rc.rightY, 0));
             }
             else
             {
@@ -195,4 +212,33 @@ public class lockToGround : MonoBehaviour
             }
         }
     }
+
+    private void initializeRCInfo()
+    {
+        rc.leftY = 0;
+        rc.midY = 0;
+        rc.rightY = 0;
+        rc.velocityY = 0;
+        rc.distanceL = 0;
+        rc.distanceM = 0;
+        rc.distanceR = 0;
+        rc.LTag = "none";
+        rc.MTag = "none";
+        rc.RTag = "none";
+    }  
+   
+}
+
+public struct rayCastInfo
+{
+    public float leftY;
+    public float midY;
+    public float rightY;
+    public float velocityY;
+    public float distanceL;
+    public float distanceM;
+    public float distanceR;
+    public string LTag ;
+    public string MTag ;
+    public string RTag ;
 }

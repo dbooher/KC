@@ -18,11 +18,7 @@ public class playerMovement : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        float f = Input.GetAxis("Horizontal") * Time.deltaTime * moveSpeed;
-        if (f!=0)
-        {
-            Debug.Log("moving @ " + f + " to : " + (rb.position.x + f) + " , " + rb.position.y);
-            rb.MovePosition(new Vector2(rb.position.x + f, lockGround.newY));
-        }
+        lockGround.offset.x += Input.GetAxis("Horizontal") * Time.deltaTime * moveSpeed;
+        rb.position = new Vector2(lockGround.offset.x + lockGround.basePosition.x , lockGround.offset.y);
     }
 }
