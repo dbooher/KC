@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent (typeof(lockToGround))]
+[RequireComponent (typeof(playerCollisionHandler))]
+
 public class playerMovement : MonoBehaviour
 {
     public float moveSpeed = 1f;
@@ -18,7 +20,7 @@ public class playerMovement : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        lockGround.offset.x += Input.GetAxis("Horizontal") * Time.deltaTime * moveSpeed;
+        lockGround.offset.x += Input.GetAxis("Horizontal") * Time.deltaTime * moveSpeed * lockGround.speedModifier;
         rb.position = new Vector2(lockGround.offset.x + lockGround.basePosition.x , lockGround.offset.y);
     }
 }

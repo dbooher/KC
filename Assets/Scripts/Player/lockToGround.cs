@@ -30,6 +30,7 @@ public class lockToGround : MonoBehaviour
     public float rayCastLength = 15000;
     public float newY = 0;
     public float speedModifier = 1;
+    public bool facingRight = true;
 
     // Start is called before the first frame update
     void Start()
@@ -48,6 +49,7 @@ public class lockToGround : MonoBehaviour
     void FixedUpdate()
     {
         UpdateTextMesh();//for debugging
+        updateFacing();
 
         doRaycasts(); //get all the Data for snapping to the ground
 
@@ -86,6 +88,92 @@ public class lockToGround : MonoBehaviour
         }        
         //move the player to the new YPos (this will be edited to use Velocity
         newY = basePosition.y + offset.y;
+
+        //update the players rotation based on current slope angle.
+        transform.eulerAngles = new Vector3(0,0,getSlopeAngle());
+
+        //update the move speed
+        updateMoveSpeed();
+    }
+
+    float getSlopeAngle()
+    {
+        return Mathf.Atan2(rightHit.point.y - leftHit.point.y, rightHit.point.x - leftHit.point.x) * Mathf.Rad2Deg;
+    }
+
+    void updateMoveSpeed()
+    {
+        if(facingRight)
+        {
+            //get the absolute angle
+            float a = getSlopeAngle();
+            a = Mathf.Abs(a);
+
+            //determine if going uphill or downHill
+            if(rightHit.point.y > leftHit.point.y)
+            {
+                //the player is going uphill
+                speedModifier = Mathf.Lerp(1, 0, a / 180) / 2;
+            }
+            else
+            {
+                if (rightHit.point.y < leftHit.point.y)
+                {
+                    //the player is going downHill
+                    speedModifier = Mathf.Lerp(1.25f , 2, a / 180);
+                }
+                else
+                {
+                    //the player is on flat ground
+                    speedModifier = 1;
+                }
+            }
+        }
+        else
+        {
+            //get the absolute angle
+            float a = getSlopeAngle();
+            a = Mathf.Abs(a);
+
+            //determine if going uphill or downHill
+            if (leftHit.point.y > rightHit.point.y)
+            {
+                //the player is going uphill
+                speedModifier = Mathf.Lerp(1, 0, a / 360) / 2;
+            }
+            else
+            {
+                if (leftHit.point.y < rightHit.point.y)
+                {
+                    //the player is going downHill
+                    speedModifier = Mathf.Lerp(1.25f, 2, a / 360);
+                }
+                else
+                {
+                    //the player is on flat ground
+                    speedModifier = 1;
+                }
+            }
+        }
+    }
+
+    void updateFacing()
+    {
+        if(Input.GetAxis("Horizontal") > 0 && !facingRight)
+        {
+            //player is facing right
+            facingRight = true;
+            transform.localScale = new Vector3(1, 1, 1);
+        }
+        else
+        {
+            if (Input.GetAxis("Horizontal") < 0 && facingRight)
+            {
+                //player is facing left
+                facingRight = false;
+                transform.localScale = new Vector3(-1, 1, 1);
+            }
+        }
     }
 
     void UpdateTextMesh()
