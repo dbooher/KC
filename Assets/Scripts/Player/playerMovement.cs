@@ -9,7 +9,7 @@ public class playerMovement : MonoBehaviour
 {
     public float moveSpeed = 1f;
     public Rigidbody2D rb;
-    lockToGround lockGround;
+    public lockToGround lockGround;
     // Start is called before the first frame update
     void Start()
     {
