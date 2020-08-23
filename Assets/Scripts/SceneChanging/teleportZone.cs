@@ -7,6 +7,7 @@ public class teleportZone : MonoBehaviour
     public int targetScene;
     public string sceneFrom;
     public GameObject teleportDataPrefab;
+    public bool requireInput = false;
     // Start is called before the first frame update
     void Start()
     {

@@ -19,7 +19,21 @@ public class teleportController : MonoBehaviour
     {
         if(collision.tag == "teleportZone")
         {
-            collision.SendMessage("teleport");
+            if (collision.GetComponent<teleportZone>().requireInput == false)
+            {
+                collision.SendMessage("teleport");
+            }
+        }
+    }
+
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.tag == "teleportZone")
+        {
+            if (collision.GetComponent<teleportZone>().requireInput == true && Input.GetKey(KeyCode.UpArrow))
+            {
+                collision.SendMessage("teleport");
+            }
         }
     }
 }
