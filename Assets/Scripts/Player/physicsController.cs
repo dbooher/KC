@@ -12,6 +12,8 @@ public class physicsController : MonoBehaviour
     public BoxCollider2D box;
     public float maxStepHeight = .25f; //the maximum step up the player can make
     public LayerMask solidMask;
+    public LayerMask inactiveStairs;
+    public bool onStairs;
     // Start is called before the first frame update
     void Start()
     {
@@ -34,6 +36,7 @@ public class physicsController : MonoBehaviour
         horizontal();
         rb.position += velocity;
         velocity = Vector2.zero;
+        stairsCheck();
     }
 
     //do horizontal collision checks
@@ -79,9 +82,9 @@ public class physicsController : MonoBehaviour
         float maximumY = bottomY + maxStepHeight;
 
         //set up the 3 points
-        raycastOrigins[0] = new Vector2(pointToCheck.x + (Mathf.Sign(velocity.x) / 2), pointToCheck.y + (boxSize.y / 2));
-        raycastOrigins[1] = new Vector2(pointToCheck.x + (Mathf.Sign(velocity.x) / 2), pointToCheck.y);
-        raycastOrigins[2] = new Vector2(pointToCheck.x + (Mathf.Sign(velocity.x) / 2), ((pointToCheck.y - (boxSize.y / 2)) + 0.1f)+.2f); //I add the 0.1 to avoid the ray hitting the ground were standing on
+        raycastOrigins[0] = new Vector2(pointToCheck.x, pointToCheck.y + (boxSize.y / 2));
+        raycastOrigins[1] = new Vector2(pointToCheck.x , pointToCheck.y);
+        raycastOrigins[2] = new Vector2(pointToCheck.x , ((pointToCheck.y - (boxSize.y / 2)) + 0.1f)+.2f); //I add the 0.1 to avoid the ray hitting the ground were standing on
 
         //get our raycastHits
         RaycastHit2D[] rh = castRays(raycastOrigins, new Vector2(Mathf.Sign(velocity.x),0) , velocity.x, solidMask);
@@ -92,10 +95,11 @@ public class physicsController : MonoBehaviour
             float contact = (Mathf.Sign(velocity.x) > 0 ? Mathf.Min(rh[0].point.x, rh[1].point.x, rh[2].point.x) : Mathf.Max(rh[0].point.x, rh[1].point.x, rh[2].point.x));
 
             //now get the distance
-            float distance = (Mathf.Sign(velocity.x) > 0 ? contact - boxSize.x : boxSize.x + contact);
-            distance = rb.position.x - distance;
+            //float distance = (Mathf.Sign(velocity.x) > 0 ? contact - (boxSize.x / 2) : (boxSize.x / 2) + contact);
+            //distance =  rb.position.x - distance;
 
-            velocity.x = Mathf.Sign(velocity.x) * distance;
+            //velocity.x = Mathf.Sign(velocity.x) * distance ;
+            velocity.x = (Mathf.Sign(velocity.x) > 0 ? -(contact - pointToCheck.x) : (pointToCheck.x - contact));
         }
     }
 
@@ -111,5 +115,19 @@ public class physicsController : MonoBehaviour
 
         return rh;
 
-    }    
+    }  
+    
+    private void stairsCheck()
+    {
+        RaycastHit2D rh = Physics2D.Raycast(rb.position, Vector2.down, 10000, inactiveStairs);
+        if (rh)
+        {
+            Debug.Log(rh.transform.name);
+           onStairs = true;
+        }
+        else
+        {
+            onStairs = false;
+        }
+    }
 }
