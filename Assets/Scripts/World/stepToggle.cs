@@ -1,37 +1,51 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Actor;
 
-public class stepToggle : MonoBehaviour
+namespace World
 {
-    public physicsController player;
-    public bool playerOnStairs = false;
-    public BoxCollider2D box;
-    // Start is called before the first frame update
-    void Start()
+    public class StepToggle : MonoBehaviour
     {
-        player = GameObject.Find("Player").GetComponent<physicsController>();
-        box = GetComponent<BoxCollider2D>();
-    }
+        private PhysicsController _actor;
 
-    // Update is called once per frame
-    void Update()
-    {
-        if(player==null)
+        public BoxCollider2D box;
+
+        // Start is called before the first frame update
+        private void Start()
         {
-            player = GameObject.Find("Player").GetComponent<physicsController>();
+            _actor = GameObject.Find("_actor").GetComponent<PhysicsController>();
             box = GetComponent<BoxCollider2D>();
-        }       
-
-        if(Input.GetKey(KeyCode.W))
-        {
-            gameObject.layer = 9;
         }
-        else
+
+
+        private void Awake()
         {
-            if(!player.onStairs)
+            if (_actor == null)
             {
-                gameObject.layer = 11;
+                _actor = GameObject.Find("_actor").GetComponent<PhysicsController>();
+            }
+
+            if (box == null)
+            {
+                box = GetComponent<BoxCollider2D>();
+            }
+        }
+
+        // Update is called once per frame
+        private void Update()
+        {
+            if (Input.GetKey(KeyCode.W))
+            {
+                gameObject.layer = 9;
+            }
+            else
+            {
+                if (!_actor._onStairs)
+                {
+                    gameObject.layer = 11;
+                }
             }
         }
     }
